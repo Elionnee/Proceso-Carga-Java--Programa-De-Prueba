@@ -1,0 +1,5 @@
+<root>
+   <priority value="${log.level}" />
+   <appender-ref ref="console" />
+   <appender-ref ref="file" />
+</root>

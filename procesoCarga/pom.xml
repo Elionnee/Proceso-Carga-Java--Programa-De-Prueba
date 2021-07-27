@@ -1,0 +1,226 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>snc</groupId>
+	<artifactId>procesoCarga</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>procesoCarga</name>
+
+	<profiles>
+		<profile>
+			<id>Development</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+				<property>
+					<name>Env</name>
+					<value>Dev</value>
+				</property>
+			</activation>
+			<properties>
+				<log.level>DEBUG</log.level>
+				<pc.url>jdbc:mysql://localhost:3306/profiles</pc.url>
+				<pc.user>dev</pc.user>
+				<pc.password>passwordDev</pc.password>
+				<profile.dir>/resources/development</profile.dir>
+				<build.profile.id>development</build.profile.id>
+			</properties>
+			<build>
+				<filters>
+					<filter>resources/development/pc.properties</filter>
+				</filters>
+
+				<resources>
+					<resource>
+						<directory>resources/development</directory>
+						<filtering>true</filtering>
+						<excludes>
+							<exclude>log*</exclude>
+						</excludes>
+					</resource>
+				</resources>
+			</build>
+		</profile>
+
+		<profile>
+			<id>Production</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+				<property>
+					<name>Env</name>
+					<value>Prod</value>
+				</property>
+			</activation>
+			<properties>
+				<log.level>INFO</log.level>
+				<pc.url>jdbc:mysql://192.168.1.30:3306/profiles</pc.url>
+				<pc.user>prod</pc.user>
+				<pc.password>tempPassword</pc.password>
+				<profile.dir>/resources/production</profile.dir>
+				<build.profile.id>production</build.profile.id>
+			</properties>
+			<build>
+				<filters>
+					<filter>resources/production/pc.properties</filter>
+				</filters>
+				<resources>
+					<resource>
+						<directory>resources/production</directory>
+						<filtering>true</filtering>
+						<excludes>
+							<exclude>log*</exclude>
+						</excludes>
+					</resource>
+				</resources>
+			</build>
+		</profile>
+
+		<profile>
+			<id>Standard</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+				<property>
+					<name>Env</name>
+					<value>Std</value>
+				</property>
+			</activation>
+			<properties>
+				<log.level>INFO</log.level>
+				<pc.url>jdbc:mysql://localhost:3306/profiles</pc.url>
+				<pc.user>std</pc.user>
+				<pc.password>1234</pc.password>
+				<profile.dir>/resources/standard</profile.dir>
+				<build.profile.id>standard</build.profile.id>
+			</properties>
+			<build>
+				<filters>
+					<filter>resources/standard/pc.properties</filter>
+				</filters>
+				<resources>
+					<resource>
+						<directory>resources/standard</directory>
+						<filtering>true</filtering>
+						<excludes>
+							<exclude>log*</exclude>
+						</excludes>
+					</resource>
+				</resources>
+			</build>
+		</profile>
+	</profiles>
+
+
+
+
+	<build>
+		<resources>
+			<resource>
+				<directory>src/main/java/META-INF</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
+
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-help-plugin</artifactId>
+				<version>3.2.0</version>
+				<executions>
+					<execution>
+						<id>show-profiles</id>
+						<phase>run</phase>
+						<goals>
+							<goal>active-profiles</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			
+			<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.mkyong.example1.App1</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+		</plugins>
+
+		<defaultGoal>process-resources</defaultGoal>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
+			<version>5.5.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+			<version>2.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<version>2.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core-jakarta</artifactId>
+			<version>5.5.4.Final</version>
+		</dependency>
+
+		<dependency>
+			<groupId>net.sf.ucanaccess</groupId>
+			<artifactId>ucanaccess</artifactId>
+			<version>4.0.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.directory.studio</groupId>
+			<artifactId>org.apache.commons.io</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.eclipse.persistence/javax.persistence -->
+		<dependency>
+			<groupId>org.eclipse.persistence</groupId>
+			<artifactId>javax.persistence</artifactId>
+			<version>2.1.1</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.eclipse.persistence/eclipselink -->
+		<dependency>
+			<groupId>org.eclipse.persistence</groupId>
+			<artifactId>eclipselink</artifactId>
+			<version>3.0.2</version>
+		</dependency>
+
+	</dependencies>
+
+</project>
+
