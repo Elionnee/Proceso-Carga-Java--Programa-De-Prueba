@@ -1,6 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>snc</groupId>
 	<artifactId>procesoCarga</artifactId>
@@ -19,20 +20,20 @@
 			</activation>
 			<properties>
 				<log.level>DEBUG</log.level>
-				<pc.url>jdbc:mysql://localhost:3306/profiles</pc.url>
+				<pc.url>jdbc:mysql://localhost:3306/resources</pc.url>
 				<pc.user>dev</pc.user>
 				<pc.password>passwordDev</pc.password>
-				<profile.dir>/resources/development</profile.dir>
+				<profile.dir>src/main/resources/development</profile.dir>
 				<build.profile.id>development</build.profile.id>
 			</properties>
 			<build>
 				<filters>
-					<filter>resources/development/pc.properties</filter>
+					<filter>src/main/resources/development/pc.properties</filter>
 				</filters>
 
 				<resources>
 					<resource>
-						<directory>resources/development</directory>
+						<directory>src/main/resources/development</directory>
 						<filtering>true</filtering>
 						<!-- <excludes> <exclude>log*</exclude> </excludes> -->
 					</resource>
@@ -54,16 +55,16 @@
 				<pc.url>jdbc:mysql://192.168.1.30:3306/profiles</pc.url>
 				<pc.user>prod</pc.user>
 				<pc.password>tempPassword</pc.password>
-				<profile.dir>/resources/production</profile.dir>
+				<profile.dir>src/main/resources/production</profile.dir>
 				<build.profile.id>production</build.profile.id>
 			</properties>
 			<build>
 				<filters>
-					<filter>resources/production/pc.properties</filter>
+					<filter>src/main/resources/production/pc.properties</filter>
 				</filters>
 				<resources>
 					<resource>
-						<directory>resources/production</directory>
+						<directory>src/main/resources/production</directory>
 						<filtering>true</filtering>
 						<!-- <excludes> <exclude>log*</exclude> </excludes> -->
 					</resource>
@@ -85,12 +86,12 @@
 				<pc.url>jdbc:mysql://localhost:3306/profiles</pc.url>
 				<pc.user>std</pc.user>
 				<pc.password>1234</pc.password>
-				<profile.dir>/resources/standard</profile.dir>
+				<profile.dir>src/main/resources/standard</profile.dir>
 				<build.profile.id>standard</build.profile.id>
 			</properties>
 			<build>
 				<filters>
-					<filter>resources/standard/pc.properties</filter>
+					<filter>src/main/resources/standard/pc.properties</filter>
 				</filters>
 				<resources>
 					<resource>
