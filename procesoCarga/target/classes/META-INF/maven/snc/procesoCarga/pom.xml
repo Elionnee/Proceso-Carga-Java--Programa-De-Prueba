@@ -1,6 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>snc</groupId>
 	<artifactId>procesoCarga</artifactId>
@@ -19,20 +20,20 @@
 			</activation>
 			<properties>
 				<log.level>DEBUG</log.level>
-				<pc.url>jdbc:mysql://localhost:3306/profiles</pc.url>
+				<pc.url>jdbc:mysql://localhost:3306/resources</pc.url>
 				<pc.user>dev</pc.user>
 				<pc.password>passwordDev</pc.password>
-				<profile.dir>/resources/development</profile.dir>
+				<profile.dir>src/main/resources/development</profile.dir>
 				<build.profile.id>development</build.profile.id>
 			</properties>
 			<build>
 				<filters>
-					<filter>resources/development/pc.properties</filter>
+					<filter>src/main/resources/development/pc.properties</filter>
 				</filters>
 
 				<resources>
 					<resource>
-						<directory>resources/development</directory>
+						<directory>src/main/resources/development</directory>
 						<filtering>true</filtering>
 						<!-- <excludes> <exclude>log*</exclude> </excludes> -->
 					</resource>
@@ -54,16 +55,16 @@
 				<pc.url>jdbc:mysql://192.168.1.30:3306/profiles</pc.url>
 				<pc.user>prod</pc.user>
 				<pc.password>tempPassword</pc.password>
-				<profile.dir>/resources/production</profile.dir>
+				<profile.dir>src/main/resources/production</profile.dir>
 				<build.profile.id>production</build.profile.id>
 			</properties>
 			<build>
 				<filters>
-					<filter>resources/production/pc.properties</filter>
+					<filter>src/main/resources/production/pc.properties</filter>
 				</filters>
 				<resources>
 					<resource>
-						<directory>resources/production</directory>
+						<directory>src/main/resources/production</directory>
 						<filtering>true</filtering>
 						<!-- <excludes> <exclude>log*</exclude> </excludes> -->
 					</resource>
@@ -85,12 +86,12 @@
 				<pc.url>jdbc:mysql://localhost:3306/profiles</pc.url>
 				<pc.user>std</pc.user>
 				<pc.password>1234</pc.password>
-				<profile.dir>/resources/standard</profile.dir>
+				<profile.dir>src/main/resources/standard</profile.dir>
 				<build.profile.id>standard</build.profile.id>
 			</properties>
 			<build>
 				<filters>
-					<filter>resources/standard/pc.properties</filter>
+					<filter>src/main/resources/standard/pc.properties</filter>
 				</filters>
 				<resources>
 					<resource>
@@ -112,6 +113,10 @@
 			<resource>
 				<directory>src/main/resources</directory>
 				<filtering>true</filtering>
+				<includes>
+					<include>log4j.properties</include>
+					<include>persistence.xml</include>
+				</includes>
 			</resource>
 		</resources>
 
@@ -203,32 +208,61 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.hibernate</groupId>
-			<artifactId>hibernate-core-jakarta</artifactId>
-			<version>5.5.4.Final</version>
-		</dependency>
-
-		<dependency>
-			<groupId>net.sf.ucanaccess</groupId>
-			<artifactId>ucanaccess</artifactId>
-			<version>4.0.4</version>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.directory.studio</groupId>
 			<artifactId>org.apache.commons.io</artifactId>
 			<version>2.4</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.eclipse.persistence/javax.persistence -->
-		<dependency>
-			<groupId>org.eclipse.persistence</groupId>
-			<artifactId>javax.persistence</artifactId>
-			<version>2.1.1</version>
-		</dependency>
+
 		<!-- https://mvnrepository.com/artifact/org.eclipse.persistence/eclipselink -->
 		<dependency>
 			<groupId>org.eclipse.persistence</groupId>
 			<artifactId>eclipselink</artifactId>
-			<version>3.0.2</version>
+			<version>2.7.9</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.49</version>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.persistence</groupId>
+			<artifactId>javax.persistence-api</artifactId>
+			<version>2.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate.javax.persistence</groupId>
+			<artifactId>hibernate-jpa-2.1-api</artifactId>
+			<version>1.0.0.Final</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-entitymanager</artifactId>
+			<version>5.2.12.Final</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>5.2.12.Final</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.3.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.sun.xml.bind</groupId>
+			<artifactId>jaxb-ri</artifactId>
+			<version>2.3.0</version>
 		</dependency>
 
 	</dependencies>
