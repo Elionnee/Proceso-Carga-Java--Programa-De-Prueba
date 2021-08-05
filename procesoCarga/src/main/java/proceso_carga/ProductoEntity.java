@@ -1,5 +1,6 @@
 package proceso_carga;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
@@ -13,9 +14,13 @@ import javax.persistence.Id;
 public class ProductoEntity  {
 	
 	@Id
+    @Column(name = "Id")
 	private String id;
+	@Column(name = "Nombre")
 	private String nombre; 
-	private Double precio;   
+	@Column(name = "Precio")
+	private Double precio; 
+	@Column(name = "Cantidad")
 	private int cantidad;  
 
 	
