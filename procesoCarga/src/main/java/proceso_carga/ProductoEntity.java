@@ -4,6 +4,8 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Clase que representa cada una de las entradas de una tabla de la base de datos.
@@ -11,18 +13,23 @@ import javax.persistence.Id;
  *
  */
 @Entity
-public class ProductoEntity  {
+public class ProductoEntity {
 	
 	@Id
-    @Column(name = "Id")
-	private String id;
+	@Column(name = "Id")
+	@Getter @Setter private String id;
+	
 	@Column(name = "Nombre")
 	private String nombre; 
+	
 	@Column(name = "Precio")
 	private Double precio; 
+	
 	@Column(name = "Cantidad")
-	private int cantidad;  
-
+	private int cantidad;
+	
+	@Column(name = "Id_Producto", columnDefinition ="text default ''")
+	@Getter @Setter private String transactionId;
 	
 	
 	
@@ -47,40 +54,19 @@ public class ProductoEntity  {
 	 *  
 	 *  @param cantidad Cantidad del producto adquirida
 	 */
-	public ProductoEntity (String id, String nombre, Double precio, int cantidad) {
+	public ProductoEntity (String id, String nombre, Double precio, int cantidad, String id_t) {
 		
 		super();
 		this.setId(id);
 		this.setNombre(nombre);
 		this.setPrecio(precio);
 		this.setCantidad(cantidad);
+		this.setTransactionId(id_t);
 		
 	}
 
 	
-	/**
-	 * Método que retorna el id del producto
-	 * 
-	 * @return id Identificador del producto
-	 */
-	public String getId() {
-		
-		return id;
-		
-	}
 	
-	
-	
-	/**
-	 * Método que da valor al identificador del producto
-	 * 
-	 * @param id Valor deseado para el identificador del producto
-	 */
-	public void setId( String id ) {
-		
-		this.id = id;
-		
-	}
 
 	
 	/**
@@ -159,5 +145,7 @@ public class ProductoEntity  {
 		this.cantidad = cantidad;
 		
 	}
+	
+	
 
 }

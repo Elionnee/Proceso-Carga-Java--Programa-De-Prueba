@@ -16,8 +16,6 @@ import org.hibernate.query.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
 import org.hibernate.Session;
 import org.hibernate.cfg.Configuration;
 import org.apache.commons.io.FileExistsException;
@@ -44,8 +42,8 @@ public class CSVFileReader {
 	private static final String DEFAULTDIR = "C:\\Users\\snc\\Downloads\\miDirDePrueba\\";
 	private static String filePath;
 
-	private ArrayList<File> filesRead= new ArrayList<>();
-	private Queue<File> filesOnQueue = new LinkedList<>();
+	private ArrayList<File> filesRead= new ArrayList<File>();
+	private Queue<File> filesOnQueue = new LinkedList<File>();
 	
 	private org.hibernate.SessionFactory sessions;
 	private Logger log = null;
@@ -53,13 +51,16 @@ public class CSVFileReader {
 
 	private final Semaphore semaforo;
 
-	StringFunction deleteSymbols = (String n) -> {
+	StringFunction deleteSymbols = new StringFunction() {
+		@Override
+		public String run(String n) {
 
-		String result = ""; 
-		result = n.replaceAll("[^a-zA-Z0-9.]", "");  
+			String result = ""; 
+			result = n.replaceAll("[^a-zA-Z0-9.]", "");  
 
-		return result;
+			return result;
 
+		}
 	};
 
 
@@ -143,17 +144,9 @@ public class CSVFileReader {
 	 * @param prod Datos a añadir
 	 */
 	private synchronized void connectToDBIntroduceData(Session session, String semana, ProductoEntity prod) {
-
-		semana = semana.replace(".csv", "");
-
-
-		System.out.println("Conectado satisfactoriamente con la base de datos");
 		
-		connectToDBCreateTable(semana, session);
-		connectToDBCreateTable("productoentity", session);
-		
-		String query = "INSERT INTO "+ semana + " (Id, Nombre, Precio, Cantidad)\r\n"
-				+ "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE Cantidad = VALUES(Cantidad) ;";
+		String query = "INSERT INTO "+ semana + " (Id, Nombre, Precio, Cantidad, Id_Producto)\r\n"
+				+ "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE Cantidad = VALUES(Cantidad) ;";
 
 		if(session.getTransaction().isActive()) {
 			session.getTransaction().rollback();
@@ -164,10 +157,12 @@ public class CSVFileReader {
 
 		@SuppressWarnings("rawtypes")
 		Query query2 = session.createNativeQuery(query);
+		
 		query2.setParameter(1, prod.getId());
 		query2.setParameter(2, prod.getNombre());
 		query2.setParameter(3, Double.toString(prod.getPrecio()));
 		query2.setParameter(4, Integer.toString(prod.getCantidad()));
+		query2.setParameter(5, prod.getTransactionId());
 
 		query2.executeUpdate();
 		session.getTransaction().commit();
@@ -192,7 +187,8 @@ public class CSVFileReader {
 				+ "    Id varchar(80) PRIMARY KEY,\n"
 				+ "    Nombre text,\n"
 				+ "    Precio double,\n"
-				+ "    Cantidad int\n"
+				+ "    Cantidad int,\n"
+				+ "    Id_Producto text\n"
 				+ ");";
 		
 		if(session.getTransaction().isActive()) {
@@ -416,10 +412,24 @@ public class CSVFileReader {
 
 			}
 
+			ProductoEntity p = null;
+			semana = semana.replace(".csv", "");
 			
 			while((next = csv.readNext()) != null) {
-
-				connectToDBIntroduceData(session, semana, new ProductoEntity(next[0], next[1], Double.parseDouble(deleteSymbols.run(next[2])), Integer.parseInt(deleteSymbols.run(next[3]))));
+				
+				if (p == null) {
+					
+					System.out.println("Conectado satisfactoriamente con la base de datos");
+					
+					connectToDBCreateTable(semana, session);
+					connectToDBCreateTable("productoentity", session);
+					
+				}
+				
+				p = new ProductoEntity(next[0] + "_" + semana, next[1], Double.parseDouble(deleteSymbols.run(next[2])), Integer.parseInt(deleteSymbols.run(next[3])), next[0]);
+				
+				connectToDBIntroduceData(session, semana, p);
+				connectToDBIntroduceData(session, "productoentity", p);
 
 			}
 			
@@ -436,8 +446,10 @@ public class CSVFileReader {
 			moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO");
 
 		} catch (NullPointerException e) {
-
+			
+			e.printStackTrace();
 			System.out.println("CSV es nulo");
+			moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO");
 
 		}
 
@@ -500,7 +512,7 @@ public class CSVFileReader {
 	 * @param threadPool Conjunto de threads disponibles
 	 * 
 	 */
-	private void threadReadCSVExecution(Session session, ExecutorService threadPool) {
+	private void threadReadCSVExecution(final Session session, ExecutorService threadPool) {
 
 		for(int i = 0; i < semaforo.availablePermits(); i++) {
 
