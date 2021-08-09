@@ -9,15 +9,13 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import org.hibernate.query.*;
 
+
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import org.hibernate.Session;
-import org.hibernate.cfg.Configuration;
 import org.apache.commons.io.FileExistsException;
 import org.apache.commons.io.FileUtils;
 
@@ -44,12 +42,11 @@ public class CSVFileReader {
 
 	private ArrayList<File> filesRead= new ArrayList<File>();
 	private Queue<File> filesOnQueue = new LinkedList<File>();
+
 	
-	private org.hibernate.SessionFactory sessions;
-	private Logger log = null;
+	private org.apache.logging.log4j.Logger logger = null;
 	private Properties prop = null;
 
-	private final Semaphore semaforo;
 
 	StringFunction deleteSymbols = new StringFunction() {
 		@Override
@@ -74,27 +71,27 @@ public class CSVFileReader {
 
 		prop = this.loadPropertiesFile("pc.properties");
 		
-		log = Logger.getLogger(this.getClass().getName());
+		logger = LogManager.getLogger(this.getClass());
 		PropertyConfigurator.configure(getClass().getResource("log4j2.xml"));
-		sessions = new Configuration().configure(new File("src/main/resources/META-INF/hibernate.cfg.xml")).buildSessionFactory();
-
-		log.trace("Logger creado 1");
-		log.debug("Logger creado 2");
-		log.error("Logger creado 3");
-		log.fatal("Logger creado 4");
-		log.info("Logger creado 5");
-		log.warn("Logger creado 6");
+		
+		
+		try {
+			logger.info("Logger funciona");
+		} catch(Exception e) {
+			logger.error("Error con el log", e);
+			e.printStackTrace();
+		}
 
 		filesRead.clear();
+		filesOnQueue.clear();
 
 		setFilePath(this.prop);
-		this.semaforo = new Semaphore(Integer.parseInt(prop.getProperty("numThreads")));
-
+		
 	}
 
 
-	
-	
+
+
 	/**
 	 * Crea un objeto 'properties'
 	 * Busca el archivo .properties en el directorio indicado y trata de leerlo. En caso de no poder, lo notifica
@@ -127,7 +124,7 @@ public class CSVFileReader {
 
 	}
 
-	
+
 	/**
 	 * Conectarse a la base de datos
 	 * Tratar de crear una tabla con el nombre. En caso de que ya exista, se notifica 
@@ -144,31 +141,32 @@ public class CSVFileReader {
 	 * @param prod Datos a añadir
 	 */
 	private synchronized void connectToDBIntroduceData(Session session, String semana, ProductoEntity prod) {
-		
+
 		String query = "INSERT INTO "+ semana + " (Id, Nombre, Precio, Cantidad, Id_Producto)\r\n"
 				+ "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE Cantidad = VALUES(Cantidad) ;";
 
-		if(session.getTransaction().isActive()) {
-			session.getTransaction().rollback();
-		}
-		
+
 		session.getTransaction().begin();
 		session.persist(prod);
 
 		@SuppressWarnings("rawtypes")
 		Query query2 = session.createNativeQuery(query);
-		
+
 		query2.setParameter(1, prod.getId());
 		query2.setParameter(2, prod.getNombre());
 		query2.setParameter(3, Double.toString(prod.getPrecio()));
 		query2.setParameter(4, Integer.toString(prod.getCantidad()));
 		query2.setParameter(5, prod.getTransactionId());
-
-		query2.executeUpdate();
-		session.getTransaction().commit();
+		try {
+			query2.executeUpdate();
+			session.getTransaction().commit();
+		} catch(Exception e) {
+			session.getTransaction().rollback();
+			session.close();
+		}
 	}
 
-	
+
 	/**
 	 * Se crea una query para crear la tabla con el nombre indicado, utilizando la conexión ya establecida con la base de datos
 	 * Se ejecuta la query
@@ -190,13 +188,9 @@ public class CSVFileReader {
 				+ "    Cantidad int,\n"
 				+ "    Id_Producto text\n"
 				+ ");";
-		
-		if(session.getTransaction().isActive()) {
-			session.getTransaction().rollback();
-		}
 
 		try {
-			
+
 			session.getTransaction().begin();
 
 			@SuppressWarnings("rawtypes")
@@ -250,17 +244,10 @@ public class CSVFileReader {
 
 		}
 
-		if(filePath == null) {
-
-			System.out.println(".properties no encontrado, se usara el path absoluto del directorio de pruebas.");
-			filePath = DEFAULTDIR; // TODO Borra esto cuando todo funcione que no deberia estar ahí
-
-		}
-
 	}
 
 
-	
+
 	/**
 	 * Buscar el directorio a monitorizar
 	 * Obtener una lista con todos los archivos que contiene en ese momento
@@ -298,7 +285,7 @@ public class CSVFileReader {
 	}
 
 
-	
+
 	/**
 	 * Comprobar que los archivos introducidos y el directorio de destino no son nulos
 	 * Tratar de mover el archivo al directorio destino
@@ -316,11 +303,11 @@ public class CSVFileReader {
 	 * @param destDir Directorio al que se va a mover
 	 */
 	private void moveFile(String orFilePath, String cpFilePath, String destDir) {
-		
+
 		try {
-			
+
 			if(StringUtils.isNoneBlank(orFilePath) && StringUtils.isNoneBlank(destDir) && StringUtils.isNoneBlank(destDir)) {
-				
+
 				File orFile = new File(orFilePath);
 				File cpFile = new File(cpFilePath);
 
@@ -328,13 +315,13 @@ public class CSVFileReader {
 				System.out.println("Archivo trasladado correctramente a la carpeta : " + destDir);
 
 			}
-			
+
 		} catch(Exception ex) { 
-			
+
 			ex.printStackTrace();
-		
+
 		}
-		
+
 	}
 
 
@@ -343,7 +330,7 @@ public class CSVFileReader {
 	 * En caso de no poder, sobreescribir el archivo ya existente con el mismo nombre
 	 * Borrar el archivo de su directorio original
 	 */
-	
+
 	/**
 	 * Sobreescribe el archivo indicado con el archivo introducido
 	 * 
@@ -414,25 +401,25 @@ public class CSVFileReader {
 
 			ProductoEntity p = null;
 			semana = semana.replace(".csv", "");
-			
+
 			while((next = csv.readNext()) != null) {
-				
+
 				if (p == null) {
-					
+
 					System.out.println("Conectado satisfactoriamente con la base de datos");
-					
+
 					connectToDBCreateTable(semana, session);
 					connectToDBCreateTable("productoentity", session);
-					
+
 				}
-				
+
 				p = new ProductoEntity(next[0] + "_" + semana, next[1], Double.parseDouble(deleteSymbols.run(next[2])), Integer.parseInt(deleteSymbols.run(next[3])), next[0]);
-				
+
 				connectToDBIntroduceData(session, semana, p);
 				connectToDBIntroduceData(session, "productoentity", p);
 
 			}
-			
+
 			moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\OK\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\OK");
 
 		} catch (CsvValidationException e) {
@@ -446,7 +433,7 @@ public class CSVFileReader {
 			moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO");
 
 		} catch (NullPointerException e) {
-			
+
 			e.printStackTrace();
 			System.out.println("CSV es nulo");
 			moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO");
@@ -456,7 +443,7 @@ public class CSVFileReader {
 	}
 
 
-	
+
 	/**
 	 * Obtener la lista de archivos pendientes de leer
 	 * Mientras queden archivos pendientes por leer, asignar a los threads disponibles un archivo a leer
@@ -468,32 +455,16 @@ public class CSVFileReader {
 	 * 
 	 * @throws InterruptedException Se lanza cuando un thread sufre una interrupción inesperada
 	 */
-	public void readCSV() throws InterruptedException {
+	public void readCSV(Session session) {
 
 		getFiles();
 		ExecutorService threadPool = Executors.newFixedThreadPool(Integer.parseInt(prop.getProperty("numThreads")));
-		
-		Session session = sessions.openSession();
-		
+		 
 		while(!filesOnQueue.isEmpty()) {
 
 			threadReadCSVExecution(session, threadPool);
 
 		}
-		
-		try {
-
-			threadPool.awaitTermination(2, TimeUnit.SECONDS);
-
-		} catch (InterruptedException e) {
-
-			Thread.currentThread().interrupt();
-			System.out.println("Thread interrumpido");
-
-		}
-		
-		session.close();
-
 	}
 
 
@@ -513,24 +484,13 @@ public class CSVFileReader {
 	 * 
 	 */
 	private void threadReadCSVExecution(final Session session, ExecutorService threadPool) {
-
-		for(int i = 0; i < semaforo.availablePermits(); i++) {
-
+		
 			threadPool.execute(new Runnable() {
 
 				public void run() {
-
-					try {
-
-						semaforo.acquire();
+					
 						threadGetFileFromQueue();
-
-					} catch (InterruptedException e) {
-
-						Thread.currentThread().interrupt();
-
-					} 
-
+						
 				}
 
 				private void threadGetFileFromQueue() {
@@ -552,17 +512,11 @@ public class CSVFileReader {
 
 						e.printStackTrace();
 
-					} finally {
-
-						semaforo.release();
-
 					}
 
 				}
 
 			});
-
-		}
 
 	}
 
