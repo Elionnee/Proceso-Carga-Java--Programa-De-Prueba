@@ -37,7 +37,11 @@ public class CSVReaderEventsReact {
 		sessions = new Configuration().configure(new File("src/main/resources/META-INF/hibernate.cfg.xml")).buildSessionFactory();
 		session = sessions.openSession();
 		while(i < 0) {
-			reader.readCSV(session);
+			try {
+				reader.readCSV(session);
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
 			watch.watchService();
 		}
 		session.close();

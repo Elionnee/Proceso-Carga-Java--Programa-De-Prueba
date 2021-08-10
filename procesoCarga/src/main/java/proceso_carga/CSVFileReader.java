@@ -37,17 +37,26 @@ interface StringFunction {
  */
 public class CSVFileReader {
 
-	private static final String DEFAULTDIR = "C:\\Users\\snc\\Downloads\\miDirDePrueba\\";
+	// Directorio que se desea monitorizar
 	private static String filePath;
 
+	// Archivos leidos
 	private ArrayList<File> filesRead= new ArrayList<File>();
+	// Archivos pendientes de leer
 	private Queue<File> filesOnQueue = new LinkedList<File>();
 
-	
+	// Estado actual del thread, cambia si es interrumpido
+	private Boolean threadState = true;
+
+	private ProductoEntity p = null;
+
+	// Objeto logger que registra el estado del programa por consola
 	private org.apache.logging.log4j.Logger logger = null;
+	// Objeto properties que nos permite acceder a los contenidos del archivo pc.properties correspondiente
 	private Properties prop = null;
 
 
+	// Lambda que permite dar un formato específico a la string que se le pasa como parámetro de entrada
 	StringFunction deleteSymbols = new StringFunction() {
 		@Override
 		public String run(String n) {
@@ -62,6 +71,15 @@ public class CSVFileReader {
 
 
 
+
+
+
+
+
+
+
+
+
 	/**
 	 * Constructor de la clase que se encarga de buscar el archivo .properties y de leer que archivos 
 	 * csv hay en el directorio que este archivo especifica
@@ -69,25 +87,38 @@ public class CSVFileReader {
 	 */
 	public CSVFileReader() {
 
+		// Genera la conexión con el archivo .properties indicado
 		prop = this.loadPropertiesFile("pc.properties");
-		
+
+		// Crea el logger y lo configura a partir de las indicaciones del fichero log4j2.xml correspondiente
 		logger = LogManager.getLogger(this.getClass());
 		PropertyConfigurator.configure(getClass().getResource("log4j2.xml"));
-		
-		
+
+		// Comprueba si el logger creado funciona correctamente
 		try {
-			logger.info("Logger funciona");
+			logger.debug("Logger funciona");
 		} catch(Exception e) {
 			logger.error("Error con el log", e);
 			e.printStackTrace();
 		}
 
+		// Limpia las colas de archivos leidos y pendientes de leer
 		filesRead.clear();
 		filesOnQueue.clear();
 
+		// Setea el directorio indicado en el properties como directorio a observar
 		setFilePath(this.prop);
-		
+
 	}
+
+
+
+
+
+
+
+
+
 
 
 
@@ -108,10 +139,13 @@ public class CSVFileReader {
 	 */
 	public Properties loadPropertiesFile(String filePath) {
 
+		// Crea el objeto .properties
 		prop = new Properties();
 
+		// Carga el archivo .properties de su directorio de origen, mediante un path relativo a la carpeta de recursos
 		try (InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(filePath)) {
 
+			// Carga el contenido del fichero .properties en el objeto indicado
 			prop.load(resourceAsStream);
 
 		} catch (IOException e) {
@@ -123,6 +157,17 @@ public class CSVFileReader {
 		return prop;
 
 	}
+
+
+
+
+
+
+
+
+
+
+
 
 
 	/**
@@ -142,29 +187,45 @@ public class CSVFileReader {
 	 */
 	private synchronized void connectToDBIntroduceData(Session session, String semana, ProductoEntity prod) {
 
+		// Creamos un query que nos permite insertar valores en la base de datos
 		String query = "INSERT INTO "+ semana + " (Id, Nombre, Precio, Cantidad, Id_Producto)\r\n"
 				+ "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE Cantidad = VALUES(Cantidad) ;";
 
 
+		// Inicio de la transacción con la bas
 		session.getTransaction().begin();
-		session.persist(prod);
+		// session.persist(prod); // TODO No tengo demasiada idea de que hace esta línea exactamente
 
+		// Creamos un objeto query con la string que contiene el query de tipo insert
 		@SuppressWarnings("rawtypes")
 		Query query2 = session.createNativeQuery(query);
 
+		// Rellenamos los parámetros necesarios para realizar el query de tipo insert
 		query2.setParameter(1, prod.getId());
 		query2.setParameter(2, prod.getNombre());
 		query2.setParameter(3, Double.toString(prod.getPrecio()));
 		query2.setParameter(4, Integer.toString(prod.getCantidad()));
 		query2.setParameter(5, prod.getTransactionId());
+
+		// Intenta actualizar la base de datos ejecutando la query
 		try {
 			query2.executeUpdate();
 			session.getTransaction().commit();
 		} catch(Exception e) {
 			session.getTransaction().rollback();
-			session.close();
+			// session.close(); // TODO No creo que sea buena idea cerrar la sesión aquí
 		}
 	}
+
+
+
+
+
+
+
+
+
+
 
 
 	/**
@@ -181,6 +242,7 @@ public class CSVFileReader {
 	 */
 	private void connectToDBCreateTable(String semana, Session session) {
 
+		// Creamos un query del tipo create que nos permitirá crear una tabala con el nombre indicado
 		String queryTable = "CREATE TABLE " + semana + " ("
 				+ "    Id varchar(80) PRIMARY KEY,\n"
 				+ "    Nombre text,\n"
@@ -189,10 +251,12 @@ public class CSVFileReader {
 				+ "    Id_Producto text\n"
 				+ ");";
 
+		// Comienza la transacción para actualizar la base de datos y crear una tabla usando la query
 		try {
 
 			session.getTransaction().begin();
 
+			// Crea el objeto query usando el string que contiene la query del tipo create 
 			@SuppressWarnings("rawtypes")
 			Query query = session.createNativeQuery(queryTable);
 			query.executeUpdate();
@@ -206,6 +270,17 @@ public class CSVFileReader {
 
 		}
 	}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -234,6 +309,7 @@ public class CSVFileReader {
 	 */
 	private static void setFilePath(Properties prop) {
 
+		// Extraemos el filepath del directorio que se desea monitorizar del fichero .properties
 		try {
 
 			filePath = prop.getProperty("dir");
@@ -245,6 +321,17 @@ public class CSVFileReader {
 		}
 
 	}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -260,21 +347,28 @@ public class CSVFileReader {
 	 */
 	private void getFiles() {
 
+		// Obtiene la referencia al directorio y extrae todos los archivos presentes en el mismo
 		File folder = new File(filePath);
 		File[] filesPresent = folder.listFiles();
 
+		// Comprueba que en verdad cintiene archivos
 		if(filesPresent.length==0) {
 
-			System.out.println("No hay archivos CSV pendientes de leer.");
+			System.out.println(Thread.currentThread().getId() + " : No hay archivos CSV pendientes de leer.");
 
 		} else {
 
+			// Comprueba que los archivos presentes son .CSV y que no habian sido leidos previamente durante esta ejecución
 			for(File fileName : filesPresent) { 
 
 				if(fileName.toString().toLowerCase().endsWith(".csv") && (fileName.isFile()) 
 						&& (!filesRead.contains(fileName))) {
 
 					filesOnQueue.add(fileName);
+
+				} else {
+
+					System.out.println(Thread.currentThread().getName() + " : No hay archivos CSV pendientes de leer.");
 
 				}
 
@@ -283,6 +377,17 @@ public class CSVFileReader {
 		}
 
 	}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -325,6 +430,17 @@ public class CSVFileReader {
 	}
 
 
+
+
+
+
+
+
+
+
+
+
+
 	/**
 	 * Mover el archivo indicado al directorio indicado
 	 * En caso de no poder, sobreescribir el archivo ya existente con el mismo nombre
@@ -358,6 +474,17 @@ public class CSVFileReader {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 	/**
 	 * Crear un lector para archivos CSV que lea el archivo indicado como parametro de entrada
 	 * Saltar la primera línea del archivo, ya que no contiene datos
@@ -379,6 +506,7 @@ public class CSVFileReader {
 		String semana = file.getName();
 		String[] next = null;
 
+		// Crea un reader para leer el archivo .csv que le pasan como parametro de entrada, saltandose la 1º línea
 		try {
 
 			Reader reader = Files.newBufferedReader(Paths.get(file.getAbsolutePath()));
@@ -391,149 +519,227 @@ public class CSVFileReader {
 
 		}
 
-		try {
 
-			if(csv == null) {
+		if(csv != null) {
+			Boolean c = true;
 
-				throw new NullPointerException();
-
-			}
-
-			ProductoEntity p = null;
 			semana = semana.replace(".csv", "");
 
-			while((next = csv.readNext()) != null) {
+			if (p == null) {
 
-				if (p == null) {
+				System.out.println("Conectado satisfactoriamente con la base de datos");
 
-					System.out.println("Conectado satisfactoriamente con la base de datos");
-
-					connectToDBCreateTable(semana, session);
-					connectToDBCreateTable("productoentity", session);
-
-				}
-
-				p = new ProductoEntity(next[0] + "_" + semana, next[1], Double.parseDouble(deleteSymbols.run(next[2])), Integer.parseInt(deleteSymbols.run(next[3])), next[0]);
-
-				connectToDBIntroduceData(session, semana, p);
-				connectToDBIntroduceData(session, "productoentity", p);
+				connectToDBCreateTable(semana, session);
+				connectToDBCreateTable("productoentity", session);
 
 			}
+			
+			while(c) {
+				try {
 
-			moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\OK\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\OK");
+					// Mientras haya una línea de CSV por leer, continua
+					while((next = csv.readNext()) != null) {
 
-		} catch (CsvValidationException e) {
+						// Crea una entidad nueva (Un producto nuevo)
+						p = new ProductoEntity(next[0] + "_" + semana, next[1], Double.parseDouble(deleteSymbols.run(next[2])), Integer.parseInt(deleteSymbols.run(next[3])), next[0]);
 
-			System.out.println("CSV es null");
-			moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO");
+						// Introduce la nueva entidad en su tabla correspondiente y en la tabla general
+						connectToDBIntroduceData(session, semana, p);
+						connectToDBIntroduceData(session, "productoentity", p);
 
-		} catch (IOException e) {
+					}
 
-			System.out.println("Error al leer el CSV");
-			moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO");
+					// En caso de salir bien, mueve el archivo a la 
+					moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\OK\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\OK");
+					
+					c = false;
 
-		} catch (NullPointerException e) {
+				} catch (CsvValidationException e) {
 
-			e.printStackTrace();
-			System.out.println("CSV es nulo");
-			moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO");
+					System.out.println("CSV es null");
+					moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO");
 
-		}
+				} catch (IOException e) {
 
-	}
+					System.out.println("Error al leer el CSV");
+					moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO");
 
+				} catch (NullPointerException e) {
 
+					e.printStackTrace();
+					System.out.println("CSV es nulo");
+					moveFile(file.getAbsolutePath(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO\\" + file.getName(), "C:\\Users\\snc\\Downloads\\miDirDePrueba\\KO");
 
-	/**
-	 * Obtener la lista de archivos pendientes de leer
-	 * Mientras queden archivos pendientes por leer, asignar a los threads disponibles un archivo a leer
-	 * Interrumpir el thread en caso de error y notificar del mismo
-	 */
-
-	/**
-	 * Recoge todos los archivos nuevos que se encuentran actualmente en el directorio y los lee
-	 * 
-	 * @throws InterruptedException Se lanza cuando un thread sufre una interrupción inesperada
-	 */
-	public void readCSV(Session session) {
-
-		getFiles();
-		ExecutorService threadPool = Executors.newFixedThreadPool(Integer.parseInt(prop.getProperty("numThreads")));
-		 
-		while(!filesOnQueue.isEmpty()) {
-
-			threadReadCSVExecution(session, threadPool);
-
+				}
+				
+			}
 		}
 	}
 
 
 
-	/**
-	 * Por cada thread disponible, comenzar a ejecutar la funciópn run() :
-	 * 		Adquirir un semaforo
-	 * 		Obtener archivo de la cola de pendientes
-	 * 		Avisar en caso de que haya una interrupción inesperada y detener el thread
-	 * 
-	 */
 
-	/**
-	 * Método que crea los threads y su función de ejecución para leer los archivos CSV
-	 * 
-	 * @param threadPool Conjunto de threads disponibles
-	 * 
-	 */
-	private void threadReadCSVExecution(final Session session, ExecutorService threadPool) {
-		
+
+
+
+
+
+
+
+
+
+		/**
+		 * Obtener la lista de archivos pendientes de leer
+		 * Mientras queden archivos pendientes por leer, asignar a los threads disponibles un archivo a leer
+		 * Interrumpir el thread en caso de error y notificar del mismo
+		 */
+
+		/**
+		 * Recoge todos los archivos nuevos que se encuentran actualmente en el directorio y los lee
+		 * 
+		 * @throws InterruptedException Se lanza cuando un thread sufre una interrupción inesperada
+		 */
+		public void readCSV(Session session) {
+			
+			Boolean pendiente = false;
+
+			getFiles();
+
+			if (!filesOnQueue.isEmpty()) {
+				
+				ExecutorService threadPool = Executors.newFixedThreadPool(Integer.parseInt(prop.getProperty("numThreads")));
+				pendiente = true;
+
+				while(pendiente) {
+
+					pendiente = threadReadCSVExecution(session, threadPool);
+
+				}
+			}
+
+		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		/**
+		 * Por cada thread disponible, comenzar a ejecutar la funciópn run() :
+		 * 		Adquirir un semaforo
+		 * 		Obtener archivo de la cola de pendientes
+		 * 		Avisar en caso de que haya una interrupción inesperada y detener el thread
+		 * 
+		 */
+
+		/**
+		 * Método que crea los threads y su función de ejecución para leer los archivos CSV
+		 * 
+		 * @param threadPool Conjunto de threads disponibles
+		 * 
+		 */
+		private Boolean threadReadCSVExecution(final Session session, ExecutorService threadPool) {
+
 			threadPool.execute(new Runnable() {
 
 				public void run() {
-					
+
+					try {
 						threadGetFileFromQueue();
-						
+					} catch (Exception e) {
+						notifyThreadInt();
+					}
+
 				}
 
-				private void threadGetFileFromQueue() {
+				private void threadGetFileFromQueue() throws Exception {
 
 					File file;
 
-					try {
+					file = getFileFromFileQueue();
 
-						file = getFileFromFileQueue();
+					if(file != null) {
 
-						if(file != null) {
-
-							readFile(session, file);
-							filesRead.add(file);
-
-						}
-
-					} catch (NullPointerException e) { 
-
-						e.printStackTrace();
-
+						readFile(session, file);
+						filesRead.add(file);
+						setThreadState();
+					} else {
+						Thread.currentThread().interrupt();
 					}
 
 				}
 
 			});
 
-	}
+			if(!threadState) {
+				setThreadState();
+				return false;
+			} else {
+				return true;
+			}
 
-
-
-
-
-	/**
-	 * Método que extrae y devuelve el primer archivo de la cola de archivos pendientes por leer
-	 * 
-	 * @return filesOnQueue.poll() Primer archivo pendiente por leer
-	 */
-	private synchronized File getFileFromFileQueue() {
-		if(!filesOnQueue.isEmpty()) {
-			return filesOnQueue.poll();
 		}
-		return null;
-	}
 
-} 
+
+
+
+
+
+
+
+
+
+
+
+
+		private synchronized void notifyThreadInt() {
+			threadState = false;
+		}
+
+
+
+
+
+
+
+
+
+
+
+
+		private synchronized void setThreadState() {
+			threadState = true;
+		}
+
+
+
+
+
+
+
+
+
+
+
+
+		/**
+		 * Método que extrae y devuelve el primer archivo de la cola de archivos pendientes por leer
+		 * 
+		 * @return filesOnQueue.poll() Primer archivo pendiente por leer
+		 */
+		private synchronized File getFileFromFileQueue() {
+			if(!filesOnQueue.isEmpty()) {
+				return filesOnQueue.poll();
+			}
+			return null;
+		}
+
+	} 
